@@ -1,0 +1,6 @@
+greenlet==3.0.2
+pyaes==1.6.1
+Pyrogram==2.0.106
+PySocks==1.7.1
+SQLAlchemy==2.0.23
+typing_extensions==4.9.0
