@@ -1,65 +1,33 @@
-import subprocess
-import re
 import os
 
 from pyrogram import Client, filters
-from pathlib import Path
-from pyrogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database.models import Statistics
+from database.models import Statistics, Directory, Document
 from database.engine import engine
 
 
 @Client.on_message(filters.private & filters.regex("^📖 لیست رشته ها 📖$"))
 def show_study_fields(client: Client, message: Message):
-    message.reply_text(
-        "رشته تون رو انتخاب کنید:",
-        reply_markup=ReplyKeyboardMarkup(
-            [
-                [KeyboardButton("⚡️ مهندسی برق ⚡️")],
-                [KeyboardButton("💻 مهندسی کامپیوتر 💻")],
-                [KeyboardButton("↩️ بازگشت به منوی قبل")]
-            ],
-            resize_keyboard=True
-            )
-        )
-
-
-@Client.on_message(filters.private & filters.regex("^⚡️ مهندسی برق ⚡️$"))
-def show_electrical_engineering_contents(client: Client, message: Message):
-    folders = subprocess.run(["mega-ls", "ee"], capture_output=True).stdout.decode().split("\n")
-    message.reply_text(
-        f"لیست فولدر های موجود برای {message.text} :",
-        reply_markup=InlineKeyboardMarkup(
-            [[InlineKeyboardButton(label, callback_data=f"ls-ee/{label}")] for label in folders],
-        )
-    )
-
-
-@Client.on_message(filters.private & filters.regex("^💻 مهندسی کامپیوتر 💻$"))
-def show_computer_engineering_contents(client: Client, message: Message):
-    folders = subprocess.run(["mega-ls", "ce"], capture_output=True).stdout.decode().split("\n")
-    message.reply_text(
-        f"📂 آرشیو موجود برای {message.text}:",
-        reply_markup=InlineKeyboardMarkup(
-            [[InlineKeyboardButton(label, callback_data=f"ls-ce/{label}")] for label in folders],
-        )
-    )
+    with Session(engine) as session:
+        parent_directories = session.scalars(select(Directory).where(Directory.parent_id == None)).all()
+        keyboard = [[InlineKeyboardButton(directory.persian_title, callback_data=f"ls-{directory.id}/")]
+                    for directory in parent_directories]
+        message.reply_text( "رشته تون رو انتخاب کنید:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 @Client.on_callback_query(filters.regex("^ls-(.*)"))
 def show_folder_content(client: Client, callback_query: CallbackQuery):
-    print("mega-ls", callback_query.data.split("-")[-1])
-    contents = subprocess.run(["mega-ls", callback_query.data.split("-")[-1]], capture_output=True).stdout.decode().strip().split("\n")
-    file_pattern = re.compile(r".*\..+")
+    with Session(engine) as session:
+        directory_id = callback_query.data.split('-')[-1].split('/')[-1]
+        directory = session.scalar(select(Directory).where(Directory.id == int(directory_id)))
+        keyboard = [[InlineKeyboardButton(directory.persian_title, callback_data=f"ls-{callback_query.data.split('-')[-1]}/{directory.id}")]
+                    for directory in directory.sub_directories]
 
-    # Content keyboard
-    keyboard = [[
-        InlineKeyboardButton( label,
-            callback_data=f"{'dn-' if file_pattern.match(label) else 'ls-'}{callback_query.data.split('-')[-1]}/{label}")
-    ] for label in contents]
+        for document in directory.documents:
+            keyboard.append([InlineKeyboardButton(document.persian_title, callback_data=f"dn-{callback_query.data.split('-')[-1]}/{document.id}")])
 
     # Place return button
     if len(callback_query.data.split('/')) != 1:
@@ -76,27 +44,21 @@ def show_folder_content(client: Client, callback_query: CallbackQuery):
 
 @Client.on_callback_query(filters.regex("^dn-(.*)/(.*)"))
 def download_content(client: Client, callback_query: CallbackQuery):
-    file_name = callback_query.data.split('/')[-1]
-    file_path = Path('downloads/' + file_name)
-
-    # Check if the file exists
-    if not file_path.is_file():
-        response = subprocess.run(["mega-get", callback_query.data.split('-')[-1], "downloads/"], capture_output=True)
-
-    file_size = os.path.getsize(file_path)
-
     with Session(engine) as session:
-        bot_stats: Statistics = session.scalar(select(Statistics).where(Statistics.id == 1))
-        bot_stats.download += file_size
+        document_id = callback_query.data.split('/')[-1]
+        document = session.scalar(select(Document).where(Document.id == int(document_id)))
+        document_size = os.path.getsize(document.path)
+
+        bot_stats = session.scalar(select(Statistics).where(Statistics.id == 1))
+        bot_stats.downloaded += document_size
         session.commit()
 
-    callback_query.message.delete()
-    msg = client.send_message(callback_query.message.chat.id, "درحال آپلود فایل ...")
+        callback_query.message.delete()
+        msg = client.send_message(callback_query.message.chat.id, "درحال آپلود فایل ...")
 
-    client.send_document(
-        callback_query.message.chat.id,
-        file_path,
-        caption=f"{callback_query.data.split('/')[-1]} - {int(file_size / 1000000)} MB"
-    )
-
-    msg.delete()
+        client.send_document(
+            callback_query.message.chat.id,
+            document.path,
+            caption=f"{document.persian_title}\n{int(document_size / 1000000)} MB"
+        )
+        msg.delete()
