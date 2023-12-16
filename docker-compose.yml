@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  telegram:
+    build: telegram/
+    environment:
+      ROOT_DIR: "~HOME/"
+      ADMIN_ID: "Owner ID"
+      API_ID: "Api ID"
+      API_HASH: "Api Hash"
+      BOT_TOKEN: "Telegram Bot Token"
+    depends_on:
+      - redis
+      - postgresql
+    networks:
+      - db
+  postgresql:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: "archive_bot"
+      POSTGRES_DB: "archive_bot"
+      POSTGRES_PASSWORD: "archive_bot"
+    networks:
+      - db
+    volumes:
+      - type: volume
+        source: db_postgresql
+        target: /var/lib/postgresql/data
+  redis:
+    image: redis:latest
+    networks:
+      - db
+    volumes:
+      - type: volume
+        source: db_redis
+        target: /data
+
+volumes:
+  db_redis:
+    - name: "db_redis"
+  db_postgresql:
+    - name: "db_postgresql"
