@@ -21,20 +21,19 @@ def show_study_fields(client: Client, message: Message):
 @Client.on_callback_query(filters.regex("^ls-(.*)"))
 def show_folder_content(client: Client, callback_query: CallbackQuery):
     with Session(engine) as session:
-        directory_id = callback_query.data.split('-')[-1].split('/')[-1]
+        directory_id = callback_query.data.split('-')[-1].split('/')[-2]
         directory = session.scalar(select(Directory).where(Directory.id == int(directory_id)))
-        keyboard = [[InlineKeyboardButton(directory.persian_title, callback_data=f"ls-{callback_query.data.split('-')[-1]}/{directory.id}")]
+        keyboard = [[InlineKeyboardButton(directory.persian_title, callback_data=f"ls-{callback_query.data.split('-')[-1]}{directory.id}/")]
                     for directory in directory.sub_directories]
 
         for document in directory.documents:
-            keyboard.append([InlineKeyboardButton(document.persian_title, callback_data=f"dn-{callback_query.data.split('-')[-1]}/{document.id}")])
+            keyboard.append([InlineKeyboardButton(document.persian_title, callback_data=f"dn-{callback_query.data.split('-')[-1]}{document.id}/")])
 
     # Place return button
     if len(callback_query.data.split('/')) != 1:
         keyboard.append([
-            InlineKeyboardButton("🔝 برگشت به فولدر قبلی 🔝", callback_data="/".join(callback_query.data.split('/')[:-1]))
+            InlineKeyboardButton("🔝 برگشت به فولدر قبلی 🔝", callback_data=("/".join(callback_query.data.split('/')[:-2]) + "/"))
         ])
-    print(keyboard)
 
     callback_query.message.edit_text(
         "🗄 فولدر یا فایل مورد نظرتو انتخاب کن:",
@@ -45,7 +44,7 @@ def show_folder_content(client: Client, callback_query: CallbackQuery):
 @Client.on_callback_query(filters.regex("^dn-(.*)/(.*)"))
 def download_content(client: Client, callback_query: CallbackQuery):
     with Session(engine) as session:
-        document_id = callback_query.data.split('/')[-1]
+        document_id = callback_query.data.split('/')[-2]
         document = session.scalar(select(Document).where(Document.id == int(document_id)))
         document_size = os.path.getsize(document.path)
 
