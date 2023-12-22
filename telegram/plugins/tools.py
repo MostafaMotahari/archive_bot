@@ -30,6 +30,6 @@ def get_stats(client: Client, message: Message):
         
         message.reply_text(
             f"👤 [{users_count}] کاربر\n"
-            f"🌐 [{int(total_traffics.download / 1000000)}] مگابایت دانلود\n"
+            f"🌐 [{int(total_traffics.downloaded / 1000000)}] مگابایت دانلود\n"
             f"📁 [{total_docs}] کل فایل های آپلود شده\n"
         )
