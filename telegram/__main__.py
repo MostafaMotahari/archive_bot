@@ -1,5 +1,4 @@
 from pyrogram import Client
-import subprocess
 import os
 from database.models import Statistics
 from database.engine import engine
@@ -14,14 +13,10 @@ app = Client(
     plugins=dict(root="plugins")
 )
 
-# Check is logged in Mega account
-if "Not logged in." in subprocess.run(['mega-session'], capture_output=True).stdout.decode():
-    subprocess.run(['mega-login', os.environ.get('MEGA_EMAIL'), os.environ.get('MEGA_PASS')])
-
-with Session(engine) as session:
-    stats = Statistics()
-    session.add(stats)
-    session.commit()
+# with Session(engine) as session:
+#     stats = Statistics()
+#     session.add(stats)
+#     session.commit()
 
 
 app.run()
