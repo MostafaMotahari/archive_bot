@@ -4,21 +4,23 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 import os
 
-from database.engine import engine
-from database.models import BotUser
+from database.engine import engine, redis
+from database.models import BotUser, Directory, Document
+from plugins.utils import cmd_to_path
 
 
 @Client.on_message(filters.private & filters.regex("^/send_doc$"))
 def send_document(client: Client, message: Message):
     if message.reply_to_message.document:
-        message.reply_to_message.copy(
-            # os.environ.get('ADMIN_ID')
-            "Mousiol",
-            caption="📚 جزوه ارسال شده از:\n"
+        new_document = message.reply_to_message.copy(os.environ.get('ADMIN_ID'), caption=f"{message.from_user.id}")
+        client.send_message(
+            os.environ.get('ADMIN_ID'),
+            "📚 جزوه ارسال شده از:\n"
             f"{message.from_user.first_name} {message.from_user.id}",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("✅ ثبت جزوه", callback_data=f"submit_doc-{message.from_user.id}")]]
-            )
+                [[InlineKeyboardButton("✅ ثبت جزوه", callback_data=f"firstsubmitls-{new_document.id}")]]
+            ),
+            reply_to_message_id=new_document.id
         )
 
         message.reply_text(
@@ -30,15 +32,65 @@ def send_document(client: Client, message: Message):
         message.reply_text("❌لطفا این پیام رو روی یک فایل ریپلای کن")
 
 
-@Client.on_callback_query(filters.regex("^submit_doc-(.*)$"))
+@Client.on_callback_query(filters.user(os.environ.get('ADMIN_ID')) & filters.regex("^firstsubmitls-(.*)$"))
+def submit_doc_ls(client: Client, callback_query: CallbackQuery):
+    with Session(engine) as session:
+        message_id = callback_query.data.split('-')[-1]
+        directories = session.scalars(select(Directory).where(Directory.parent_id == None)).all()
+        keyboard = [[InlineKeyboardButton(directory.persian_title, callback_data=f"submitls-{directory.id}/{message_id}/")]
+                    for directory in directories]
+        keyboard.append([InlineKeyboardButton("ثبت در اینجا", callback_data=f"submitdoc-root/{message_id}/")])
+        callback_query.message.edit_text(
+            "⬅️ محل ایجاد فولدر رو انتخاب کن:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+
+@Client.on_callback_query(filters.user(os.environ.get('ADMIN_ID')) & filters.regex("^submitls-(.*)/"))
+def submit_docs_ls_explore(client: Client, callback_query: CallbackQuery):
+    with Session(engine) as session:
+        message_id = callback_query.data.split('/')[-2]
+        directory_id = callback_query.data.split('-')[-1].split('/')[-3]
+        sub_directories = session.scalars(select(Directory).where(Directory.parent_id == int(directory_id))).all()
+        keyboard = [[InlineKeyboardButton(sub_directory.persian_title, callback_data=f"submitls-{'/'.join(callback_query.data.split('-')[-1].split('/')[:-2])}/{sub_directory.id}/{message_id}/")]
+                    for sub_directory in sub_directories]
+        if len(directory_path := callback_query.data.split('/')) > 2:
+            keyboard.append([InlineKeyboardButton("بازگشت به فولدر قبلی", callback_data=f"submitls-{'/'.join(callback_query.data.split('-')[-1].split('/')[:-2])}/{message_id}/")])
+        keyboard.append([InlineKeyboardButton("ثبت در انیجا", callback_data=f"submitdoc-{callback_query.data.split('-')[-1]}")])
+
+        callback_query.message.edit_text(
+            "⬅️ محل ایجاد فولدر رو انتخاب کن:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+
+@Client.on_callback_query(filters.regex("^submitdoc-(.*)/"))
 def submit_document(client: Client, callback_query: CallbackQuery):
-    user_id = int(callback_query.data.split('-')[-1])
+    message_id = callback_query.data.split('/')[-2]
+    directory_id = callback_query.data.split('/')[-3]
+    message: Message = client.get_messages(chat_id=callback_query.message.chat.id, message_ids=[int(message_id)])[0]
+    user_id = int(message.caption)
+    path_to_upload = cmd_to_path('/'.join(callback_query.data.split('-')[-1].split('/')[:-1]))
+    message.download(os.path.join(path_to_upload, message.document.file_name))
+
     with Session(engine) as session:
         user_obj: BotUser = session.scalar(select(BotUser).where(BotUser.user_id == user_id))
         user_obj.uploaded_docs += 1
+        directory = session.scalar(select(Directory).where(Directory.id == int(directory_id)))
+
+        new_document = Document(
+            title=message.document.file_name,
+            persian_title=message.document.file_name,
+            path=os.path.join(path_to_upload, message.document.file_name),
+            user_id=user_obj.id,
+            user=user_obj,
+            directory_id=directory.id,
+            directory=directory
+        )
+        session.add(new_document)
         session.commit()
 
-    callback_query.message.edit_reply_markup(None)
+    callback_query.message.edit_text("جزوه با موفقیت ثبت شد!", reply_markup=None)
     callback_query.answer("✅جزوه با موفقیت ثبت شد", show_alert=True)
     try:
         client.send_message(
