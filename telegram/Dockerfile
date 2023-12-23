@@ -4,7 +4,7 @@ WORKDIR /home/archive_bot
 # Adding Static Directory
 RUN mkdir docs_repo
 # Copying source
-COPY telegram .
+COPY . .
 # Addding requirements
 COPY requirements.txt requirements.txt
 RUN pip install -U pip && pip install -r requirements.txt --no-cache-dir
