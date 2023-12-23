@@ -99,6 +99,7 @@ def submit_document(client: Client, message: Message):
             title=english_name,
             persian_title=persian_title,
             path=os.path.join(path_to_upload, english_name),
+            file_id=message.document.file_id,
             user_id=user_obj.id,
             user=user_obj,
             directory_id=directory.id,

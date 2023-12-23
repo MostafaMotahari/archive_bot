@@ -34,6 +34,7 @@ class Document(Base):
     title = Column(String, unique=True, index=True)
     persian_title = Column(String)
     path = Column(String, unique=True)
+    file_id = Column(String, unique=True, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("bot_user.id")) 
     user: Mapped["BotUser"] = relationship(back_populates="documents")
     directory_id: Mapped[int] = mapped_column(ForeignKey("directory.id"))

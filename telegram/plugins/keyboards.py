@@ -71,7 +71,7 @@ def download_content(client: Client, callback_query: CallbackQuery):
 
         client.send_document(
             callback_query.message.chat.id,
-            document.path,
+            document.file_id or document.path,
             caption=f"{document.persian_title}\n{int(document_size / 1000000)} MB"
         )
         msg.delete()
