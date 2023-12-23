@@ -18,6 +18,15 @@ def show_study_fields(client: Client, message: Message):
         message.reply_text( "رشته تون رو انتخاب کنید:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
+@Client.on_callback_query(filters.regex("^show_root_dir$"))
+def show_root_dir(client: Client, callback_query: CallbackQuery):
+    with Session(engine) as session:
+        parent_directories = session.scalars(select(Directory).where(Directory.parent_id == None)).all()
+        keyboard = [[InlineKeyboardButton(directory.persian_title, callback_data=f"ls-{directory.id}/")]
+                    for directory in parent_directories]
+        callback_query.message.edit_text( "رشته تون رو انتخاب کنید:", reply_markup=InlineKeyboardMarkup(keyboard))
+
+
 @Client.on_callback_query(filters.regex("^ls-(.*)"))
 def show_folder_content(client: Client, callback_query: CallbackQuery):
     with Session(engine) as session:
@@ -30,10 +39,15 @@ def show_folder_content(client: Client, callback_query: CallbackQuery):
             keyboard.append([InlineKeyboardButton(document.persian_title, callback_data=f"dn-{callback_query.data.split('-')[-1]}{document.id}/")])
 
     # Place return button
-    if len(callback_query.data.split('/')) != 1:
-        keyboard.append([
-            InlineKeyboardButton("🔝 برگشت به فولدر قبلی 🔝", callback_data=("/".join(callback_query.data.split('/')[:-2]) + "/"))
-        ])
+    if len(directory_path_sections := callback_query.data.split('/')) != 1:
+        if len(directory_path_sections[:-1]) == 1:
+            keyboard.append([
+                InlineKeyboardButton("🔝 برگشت به فولدر قبلی 🔝", callback_data="show_root_dir")
+            ])
+        else:
+            keyboard.append([
+                InlineKeyboardButton("🔝 برگشت به فولدر قبلی 🔝", callback_data=f"{'/'.join(directory_path_sections[:-2])}/")
+            ])
 
     callback_query.message.edit_text(
         "🗄 فولدر یا فایل مورد نظرتو انتخاب کن:",

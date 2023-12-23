@@ -48,7 +48,7 @@ def makedir(client: Client, callback_query: CallbackQuery):
     callback_query.message.edit_text(
         "✅ بسیار خب!\n"
         "نام فارسی و تایتل انگلیسی مد نظرتو به فرمت زیر بفرست:\n"
-        "```persian_title-english_name```",
+        "persian_title-english_name",
         reply_markup=None
     )
 

@@ -20,8 +20,7 @@ def leaderboard(client: Client, message: Message):
         message.reply_text(template_text)
 
 
-# @Client.on_message(filters.private & filters.user(os.environ.get("ADMIN_ID")) & filters.regex("^/stats$"))
-@Client.on_message(filters.private & filters.user("Mousiol") & filters.regex("^/stats$"))
+@Client.on_message(filters.private & filters.user(os.environ.get("ADMIN_ID")) & filters.regex("^/stats$"))
 def get_stats(client: Client, message: Message):
     with Session(engine) as session:
         users_count = session.scalar(select(func.count()).select_from(BotUser))
@@ -31,5 +30,6 @@ def get_stats(client: Client, message: Message):
         message.reply_text(
             f"👤 [{users_count}] کاربر\n"
             f"🌐 [{int(total_traffics.downloaded / 1000000)}] مگابایت دانلود\n"
+            f"🌐 [{int(total_traffics.uploaded / 1000000)}] مگابایت آپلود\n"
             f"📁 [{total_docs}] کل فایل های آپلود شده\n"
         )
