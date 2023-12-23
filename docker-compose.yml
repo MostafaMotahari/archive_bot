@@ -4,7 +4,7 @@ services:
   telegram:
     build: telegram/
     environment:
-      ROOT_DIR: "~HOME/"
+      ROOT_DIR: "/home/archive_bot/docs_repo/"
       ADMIN_ID: "Owner ID"
       API_ID: "Api ID"
       API_HASH: "Api Hash"
@@ -15,6 +15,8 @@ services:
       - postgresql
     networks:
       - db
+    volumes:
+      - "./docs_repo:/home/archive_bot/docs_repo"
   postgresql:
     image: postgres:latest
     environment:
@@ -24,20 +26,19 @@ services:
     networks:
       - db
     volumes:
-      - type: volume
-        source: db_postgresql
-        target: /var/lib/postgresql/data
+      - "./db_postgresql:/var/lib/postgresql/data"
   redis:
     image: redis:latest
     networks:
       - db
     volumes:
-      - type: volume
-        source: db_redis
-        target: /data
+      - "./db_redis:/data"
+
+networks:
+  db:
+    driver: bridge
 
 volumes:
-  db_redis:
-    - name: "db_redis"
+  docs_repo:
   db_postgresql:
-    - name: "db_postgresql"
+  db_redis:
