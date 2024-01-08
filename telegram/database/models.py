@@ -1,5 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, Boolean, String, ForeignKey
+from sqlalchemy import Column, Integer, BigInteger, Boolean, String, ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from typing import List
 
@@ -12,7 +12,7 @@ class BotUser(Base):
     __tablename__ = "bot_user"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id = Column(Integer, unique=True, index=True)
+    user_id = Column(BigInteger, unique=True, index=True)
     uploaded_docs = Column(Integer, default=0)
     is_ban = Column(Boolean, default=False)
     documents: Mapped[List["Document"]] = relationship(back_populates="user")  
