@@ -5,7 +5,7 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database.models import Statistics, Directory, Document
+from database.models import Directory
 from database.engine import engine
 
 
@@ -33,7 +33,10 @@ class KeyboardPagination:
         return f"pagination_previous_{self.current_page - 1}" if self.has_previous_page() else None
 
     def get_page_objects(self):
-        return self.sliced_queryset[self.current_page - 1]
+        try:
+            return self.sliced_queryset[self.current_page - 1]
+        except:
+            return []
 
     @property
     def total_pages(self):
@@ -75,10 +78,10 @@ def paginator(client: Client, callback_query: CallbackQuery):
         if queryset_paginated.total_pages > 1:
             pagination_row = []
             if queryset_paginated.has_next_page():
-                pagination_row.append(InlineKeyboardButton("Next", callback_data=f"{queryset_paginated.next_page_uri}_{directory.id}"))
+                pagination_row.append(InlineKeyboardButton("بعدی ◀️", callback_data=f"{queryset_paginated.next_page_uri}_{directory.id}"))
             pagination_row.append(InlineKeyboardButton(queryset_paginated, callback_data="page_number"))
             if queryset_paginated.has_previous_page():
-                pagination_row.append(InlineKeyboardButton("Prev", callback_data=f"{queryset_paginated.previous_page_uri}_{directory.id}"))
+                pagination_row.append(InlineKeyboardButton("▶️ قبلی", callback_data=f"{queryset_paginated.previous_page_uri}_{directory.id}"))
             keyboard.append(pagination_row)
 
     keyboard.append(callback_query.message.reply_markup.inline_keyboard[-1])

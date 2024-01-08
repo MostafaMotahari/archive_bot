@@ -54,10 +54,10 @@ def show_folder_content(client: Client, callback_query: CallbackQuery):
         if queryset_paginated.total_pages > 1:
             pagination_row = []
             if queryset_paginated.has_next_page():
-                pagination_row.append(InlineKeyboardButton("Next", callback_data=f"{queryset_paginated.next_page_uri}_{directory.id}"))
+                pagination_row.append(InlineKeyboardButton("بعدی ◀️", callback_data=f"{queryset_paginated.next_page_uri}_{directory.id}"))
             pagination_row.append(InlineKeyboardButton(queryset_paginated, callback_data="page_number"))
             if queryset_paginated.has_previous_page():
-                pagination_row.append(InlineKeyboardButton("Prev", callback_data=f"{queryset_paginated.previous_page_uri}_{directory.id}"))
+                pagination_row.append(InlineKeyboardButton("▶️ قبلی", callback_data=f"{queryset_paginated.previous_page_uri}_{directory.id}"))
             keyboard.append(pagination_row)
             
     # Place return button
