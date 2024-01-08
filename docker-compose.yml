@@ -9,6 +9,7 @@ services:
       API_ID: "Api ID"
       API_HASH: "Api Hash"
       BOT_TOKEN: "Telegram Bot Token"
+      PAGINATION_COUNT: 8
       DB_URL: "postgresql+psycopg2://archive_bot:archive_bot@postgresql:5432/archive_bot"
     depends_on:
       - redis
