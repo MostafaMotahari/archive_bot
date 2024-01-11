@@ -5,7 +5,7 @@ from sqlalchemy import select, func, desc
 import os
 
 from database.engine import engine
-from database.models import BotUser, Statistics
+from database.models import BotUser, Statistics, Document
 
 
 @Client.on_message(filters.private & filters.regex("^/leaderboard$"))
@@ -25,7 +25,7 @@ def leaderboard(client: Client, message: Message):
 def get_stats(client: Client, message: Message):
     with Session(engine) as session:
         users_count = session.scalar(select(func.count()).select_from(BotUser))
-        total_docs = session.scalar(select(func.sum(BotUser.uploaded_docs)).select_from(BotUser))
+        total_docs = session.scalar(select(func.count()).select_from(Document))
         total_traffics = session.scalar(select(Statistics).where(Statistics.id == 1))
         
         message.reply_text(

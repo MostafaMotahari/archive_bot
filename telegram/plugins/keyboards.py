@@ -83,6 +83,7 @@ def download_content(client: Client, callback_query: CallbackQuery):
         document_id = callback_query.data.split('/')[-2]
         document = session.scalar(select(Document).where(Document.id == int(document_id)))
         document_size = os.path.getsize(document.path)
+        document.download_count += 1
 
         bot_stats = session.scalar(select(Statistics).where(Statistics.id == 1))
         bot_stats.downloaded += document_size
@@ -95,5 +96,6 @@ def download_content(client: Client, callback_query: CallbackQuery):
             callback_query.message.chat.id,
             document.file_id or document.path,
             caption=f"{document.persian_title}\n{int(document_size / 1000000)} MB"
+            f"{document.download_count} بار دانلود شده"
         )
         msg.delete()
