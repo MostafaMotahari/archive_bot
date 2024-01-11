@@ -83,7 +83,7 @@ def download_content(client: Client, callback_query: CallbackQuery):
         document_id = callback_query.data.split('/')[-2]
         document = session.scalar(select(Document).where(Document.id == int(document_id)))
         document_size = os.path.getsize(document.path)
-        document.download_count += 1
+        document.download_count = 1 if not document.download_count else document.download_count + 1
 
         bot_stats = session.scalar(select(Statistics).where(Statistics.id == 1))
         bot_stats.downloaded += document_size
