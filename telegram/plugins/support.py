@@ -10,9 +10,19 @@ from plugins.utils import cmd_to_path
 from plugins.filters import user_cmd_regex
 
 
-@Client.on_message(filters.private & filters.regex("^/send_doc$"))
+@Client.on_message(filters.private & filters.regex("^/send_doc$") & filters.reply)
 def send_document(client: Client, message: Message):
     if message.reply_to_message.document:
+        with Session(engine) as session:
+            if message.reply_to_message.from_user.username == "Qut_archive_Bot":
+                message.reply_text("د آخه مشتی این فایلو که خودم برات فرستادم")
+                return
+
+            exist_document = session.scalar(select(Document).where(Document.file_id == message.reply_to_message.document.file_id))
+            if exist_document:
+                message.reply_text("ضمن تشکر از تو دوست عزیز که میخواستی جزوه ات رو برامون بفرستی ولی باید بگم این فایل تو سرورامون موجوده ❤️")
+                return
+
         new_document = message.reply_to_message.copy(os.environ.get('ADMIN_ID'), caption=f"{message.from_user.id}")
         client.send_message(
             os.environ.get('ADMIN_ID'),
