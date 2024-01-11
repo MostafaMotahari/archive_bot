@@ -13,15 +13,9 @@ from plugins.filters import user_cmd_regex
 @Client.on_message(filters.private & filters.regex("^/send_doc$") & filters.reply)
 def send_document(client: Client, message: Message):
     if message.reply_to_message.document:
-        with Session(engine) as session:
-            if message.reply_to_message.from_user.username == "Qut_archive_Bot":
-                message.reply_text("د آخه مشتی این فایلو که خودم برات فرستادم")
-                return
-
-            exist_document = session.scalar(select(Document).where(Document.file_id == message.reply_to_message.document.file_id))
-            if exist_document:
-                message.reply_text("ضمن تشکر از تو دوست عزیز که میخواستی جزوه ات رو برامون بفرستی ولی باید بگم این فایل تو سرورامون موجوده ❤️")
-                return
+        if message.reply_to_message.from_user.username == "Qut_archive_Bot":
+            message.reply_text("د آخه مشتی این فایلو که خودم برات فرستادم")
+            return
 
         new_document = message.reply_to_message.copy(os.environ.get('ADMIN_ID'), caption=f"{message.from_user.id}")
         client.send_message(
@@ -88,6 +82,7 @@ def submit_document_name_message(client: Client, callback_query: CallbackQuery):
 
 @Client.on_message(filters.private & user_cmd_regex("^submitdoc_name-(.*)/") & filters.regex("(.*)-(.*)") & filters.user(os.environ.get('ADMIN_ID')))
 def submit_document(client: Client, message: Message):
+    await_message = client.send_message(message.chat.id, "درحال آپلود ...")
     persian_title, english_name = message.text.split('-')
     user_cmd = redis.get(f"cmd-{message.from_user.id}").decode()
     message_id = user_cmd.split('/')[-2]
@@ -118,7 +113,7 @@ def submit_document(client: Client, message: Message):
         session.add(new_document)
         session.commit()
 
-    message.reply_text("جزوه با موفقیت ثبت شد!")
+    await_message.edit_text("جزوه با موفقیت ثبت شد!")
 
     try:
         client.send_message(
@@ -191,6 +186,7 @@ def bulk_upload_docs(client: Client, callback_query: CallbackQuery):
     messages = client.get_messages(chat_id=callback_query.message.chat.id, message_ids=message_ids)
 
     with Session(engine) as session:
+        await_message = client.send_message(callback_query.message.chat.id, "درحال آپلود ...")
         directory = session.scalar(select(Directory).where(Directory.id == int(directory_id)))
         statistics = session.scalar(select(Statistics).where(Statistics.id == 1))
         user = session.scalar(select(BotUser).where(BotUser.user_id == callback_query.from_user.id))
@@ -214,6 +210,6 @@ def bulk_upload_docs(client: Client, callback_query: CallbackQuery):
             session.add(new_document)
 
         session.commit()
-        message.reply_text("جزوات با موفقیت ثبت شد!")
+        await_message.edit_text("جزوات با موفقیت ثبت شد!")
 
     redis.delete(f"cmd-{callback_query.message.from_user.id}")
