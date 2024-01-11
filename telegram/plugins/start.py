@@ -9,7 +9,6 @@ from database.engine import engine
 
 @Client.on_message(filters.private & filters.regex("^/start$"))
 def start_message(client: Client, message: Message):
-    print("kooooos")
     with Session(engine) as session:
         if not session.scalar(select(BotUser).where(BotUser.user_id == message.from_user.id)):
             bot_user = BotUser(user_id=message.from_user.id)
@@ -29,7 +28,8 @@ def start_message(client: Client, message: Message):
         reply_markup=ReplyKeyboardMarkup(
             [
                 [KeyboardButton("📖 لیست رشته ها 📖")],
-                [KeyboardButton("📓ارسال جزوه📓")]
+                [KeyboardButton("📓ارسال جزوه📓")],
+                [KeyboardButton("⚙️ تنظیمات ⚙️")]
             ],
             resize_keyboard=True
         )
