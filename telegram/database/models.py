@@ -16,6 +16,8 @@ class BotUser(Base):
     uploaded_docs = Column(Integer, default=0)
     is_ban = Column(Boolean, default=False)
     documents: Mapped[List["Document"]] = relationship(back_populates="user")  
+    receive_notifications = Column(Boolean, default=True)
+    study_field = Column(String, nullable=True)
 
 
 class Statistics(Base):
