@@ -97,7 +97,7 @@ def removing_file(client: Client, callback_query: CallbackQuery):
     with Session(engine) as session:
         file_id = callback_query.data.split('-')[-1].split('/')[-1]
         file = session.scalar(select(Document).where(Document.id == int(file_id)))
-        os.remove(os.path.join(cmd_to_path(callback_query.data.split('-')[-1].split('/')[:-1], file.title)))
+        os.remove(os.path.join(cmd_to_path(callback_query.data.split('-')[-1].split('/')[:-1]), file.title))
         session.delete(file)
         session.commit()
 
