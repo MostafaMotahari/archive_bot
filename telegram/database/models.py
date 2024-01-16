@@ -1,5 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, BigInteger, Boolean, String, ForeignKey
+from sqlalchemy import Column, Integer, BigInteger, Boolean, String, ForeignKey, Table
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from typing import List
 
@@ -7,6 +7,13 @@ from typing import List
 Base = declarative_base()
 metadata = Base.metadata
 
+
+tag_doc_association_table = Table(
+    "association_table",
+    metadata,
+    Column("document_id", ForeignKey("document.id"), primary_key=True),
+    Column("tag_id", ForeignKey("tag.id"), primary_key=True),
+)
 
 class BotUser(Base):
     __tablename__ = "bot_user"
@@ -42,6 +49,7 @@ class Document(Base):
     user: Mapped["BotUser"] = relationship(back_populates="documents")
     directory_id: Mapped[int] = mapped_column(ForeignKey("directory.id"))
     directory: Mapped["Directory"] = relationship(back_populates="documents")
+    tags: Mapped[List["Tag"]] = relationship(secondary=tag_doc_association_table, back_populates="documents")
 
 
 class Directory(Base):
@@ -54,3 +62,11 @@ class Directory(Base):
     parent: Mapped["Directory"] = relationship(back_populates="sub_directories", remote_side=[id])
     sub_directories: Mapped[List["Directory"]] = relationship(back_populates="parent", cascade="all")
     documents: Mapped[List["Document"]] = relationship(back_populates="directory", cascade="all")
+
+
+class Tag(Base):
+    __tablename__ = "tag"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name = Column(String, unique=True, index=True)
+    documents: Mapped[List[Document]] = relationship(secondary=tag_doc_association_table, back_populates="tags")

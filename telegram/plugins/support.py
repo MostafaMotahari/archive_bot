@@ -85,6 +85,7 @@ def submit_document(client: Client, message: Message):
     await_message = client.send_message(message.chat.id, "درحال آپلود ...")
     persian_title, english_name = message.text.split('-')
     user_cmd = redis.get(f"cmd-{message.from_user.id}").decode()
+    redis.delete(f"cmd-{message.from_user.id}")
     message_id = user_cmd.split('/')[-2]
     directory_id = user_cmd.split('/')[-3].split('-')[-1]
     message: Message = client.get_messages(chat_id=message.chat.id, message_ids=[int(message_id)])[0]

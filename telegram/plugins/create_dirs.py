@@ -65,7 +65,7 @@ def naming_made_directory(client: Client, message: Message):
         else:
             parent_directory = user_cmd.split('-')[-1].split('/')[-2]
             parent_directory_obj = session.scalar(select(Directory).where(Directory.id == int(parent_directory)))
-            directory = Directory( name=title, persian_title=persian_title, parent=parent_directory_obj)
+            directory = Directory( name=title, persian_title=persian_title, parent_id=parent_directory_obj.id, parent=parent_directory_obj)
             directory_path = cmd_to_path(user_cmd.split('-')[-1])
             path = os.path.join(directory_path, title)
 

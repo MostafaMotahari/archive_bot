@@ -7,9 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database.models import Directory, Document
-from database.engine import engine, redis
+from database.engine import engine
 from plugins.utils import cmd_to_path
-from plugins.filters import user_cmd_regex
 
 
 @Client.on_message(filters.private & filters.user(os.environ.get('ADMIN_ID')) & filters.regex("^/remove_dir$"))
@@ -98,6 +97,7 @@ def removing_file(client: Client, callback_query: CallbackQuery):
         file_id = callback_query.data.split('-')[-1].split('/')[-1]
         file = session.scalar(select(Document).where(Document.id == int(file_id)))
         os.remove(os.path.join(cmd_to_path('/'.join(callback_query.data.split('-')[-1].split('/'))), file.title))
+        file.user.uploaded_docs -= 1
         session.delete(file)
         session.commit()
 
