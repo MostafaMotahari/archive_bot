@@ -10,7 +10,6 @@ from database.engine import engine
 def cmd_to_path(cmd: str):
     with Session(engine) as session:
         directory_ids = cmd.split('/')[:-1]
-        print(directory_ids)
         path = ""
         for directory_id in directory_ids:
             try:

@@ -14,7 +14,7 @@ from plugins.keyboard_pagination import KeyboardPagination
 def show_study_fields(client: Client, message: Message):
     with Session(engine) as session:
         parent_directories = session.scalars(select(Directory).where(Directory.parent_id == None)).all()
-        keyboard = [[InlineKeyboardButton(directory.persian_title, callback_data=f"ls-{directory.id}/")]
+        keyboard = [[InlineKeyboardButton(directory.persian_title, callback_data=f"lskeyboard-{directory.id}")]
                     for directory in parent_directories]
         message.reply_text( "رشته تون رو انتخاب کنید:", reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -23,32 +23,32 @@ def show_study_fields(client: Client, message: Message):
 def show_root_dir(client: Client, callback_query: CallbackQuery):
     with Session(engine) as session:
         parent_directories = session.scalars(select(Directory).where(Directory.parent_id == None)).all()
-        keyboard = [[InlineKeyboardButton(directory.persian_title, callback_data=f"ls-{directory.id}/")]
+        keyboard = [[InlineKeyboardButton(directory.persian_title, callback_data=f"lskeyboard-{directory.id}")]
                     for directory in parent_directories]
         callback_query.message.edit_text( "رشته تون رو انتخاب کنید:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
-@Client.on_callback_query(filters.regex("^ls-(.*)"))
+@Client.on_callback_query(filters.regex("^lskeyboard-(.*)$"))
 def show_folder_content(client: Client, callback_query: CallbackQuery):
     with Session(engine) as session:
-        directory_id = callback_query.data.split('-')[-1].split('/')[-2]
+        directory_id = callback_query.data.split('-')[-1]
         directory = session.scalar(select(Directory).where(Directory.id == int(directory_id)))
         pagination_count = int(os.environ.get('PAGINATION_COUNT'))
         keyboard = []
 
-        queryset_paginated = KeyboardPagination(directory.sub_directories + directory.documents, pagination_count, 1)
+        queryset_paginated = KeyboardPagination(directory.sub_directories + directory.documents, pagination_count, 1, 'keyboard')
         for query_obj in queryset_paginated.get_page_objects():
             if type(query_obj) == Directory:
                 keyboard.append([
                     InlineKeyboardButton(
                         f"- {query_obj.persian_title}",
-                        callback_data=f"ls-{callback_query.data.split('-')[-1]}{query_obj.id}/")
+                        callback_data=f"lskeyboard-{query_obj.id}")
                 ])
             else:
                 keyboard.append([
                     InlineKeyboardButton(
                         f"+ {query_obj.persian_title}",
-                        callback_data=f"dn-{callback_query.data.split('-')[-1]}{query_obj.id}/")
+                        callback_data=f"dnkeyboard-{query_obj.id}")
                 ])
 
         if queryset_paginated.total_pages > 1:
@@ -61,14 +61,13 @@ def show_folder_content(client: Client, callback_query: CallbackQuery):
             keyboard.append(pagination_row)
             
     # Place return button
-    if len(directory_path_sections := callback_query.data.split('/')) != 1:
-        if len(directory_path_sections[:-1]) == 1:
+        if not directory.parent:
             keyboard.append([
                 InlineKeyboardButton("🔝 برگشت به فولدر قبلی 🔝", callback_data="show_root_dir")
             ])
         else:
             keyboard.append([
-                InlineKeyboardButton("🔝 برگشت به فولدر قبلی 🔝", callback_data=f"{'/'.join(directory_path_sections[:-2])}/")
+                InlineKeyboardButton("🔝 برگشت به فولدر قبلی 🔝", callback_data=f"lskeyboard-{directory.parent.id}")
             ])
 
     callback_query.message.edit_text(
@@ -77,10 +76,10 @@ def show_folder_content(client: Client, callback_query: CallbackQuery):
     )
 
 
-@Client.on_callback_query(filters.regex("^dn-(.*)/(.*)"))
+@Client.on_callback_query(filters.regex("^dn-(.*)$"))
 def download_content(client: Client, callback_query: CallbackQuery):
     with Session(engine) as session:
-        document_id = callback_query.data.split('/')[-2]
+        document_id = callback_query.data.split('-')[-1]
         document = session.scalar(select(Document).where(Document.id == int(document_id)))
         document_size = os.path.getsize(document.path)
         document.download_count = 1 if not document.download_count else document.download_count + 1
