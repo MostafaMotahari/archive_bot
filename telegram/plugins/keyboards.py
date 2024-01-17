@@ -48,7 +48,7 @@ def show_folder_content(client: Client, callback_query: CallbackQuery):
                 keyboard.append([
                     InlineKeyboardButton(
                         f"+ {query_obj.persian_title}",
-                        callback_data=f"dnkeyboard-{query_obj.id}")
+                        callback_data=f"dn-{query_obj.id}")
                 ])
 
         if queryset_paginated.total_pages > 1:
