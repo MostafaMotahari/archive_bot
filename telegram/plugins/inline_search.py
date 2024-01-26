@@ -48,7 +48,7 @@ def search_document(client: Client, inline_query: InlineQuery):
                 document_file_id=document.file_id,
                 title=document.persian_title,
                 description=description,
-                caption="Powered by: @Qut_archive_bot @TheAlternativeMousiol"
+                caption="Powered by: @Qut_archive_bot"
             ))
 
         inline_query.answer(results)

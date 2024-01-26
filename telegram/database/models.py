@@ -25,6 +25,14 @@ class BotUser(Base):
     documents: Mapped[List["Document"]] = relationship(back_populates="user")  
     receive_notifications = Column(Boolean, default=True)
     study_field = Column(String, nullable=True)
+    is_superuser = Column(Boolean, default=False)
+    permissions = Column(String, nullable=True)
+
+    def get_all_permissions(self):
+        return self.permissions.split(',')
+
+    def has_permission(self, permission: str):
+        return permission in self.permissions
 
 
 class Statistics(Base):
@@ -32,8 +40,8 @@ class Statistics(Base):
 
     id = Column(Integer, unique=True, primary_key=True)
     users_count = Column(Integer, default=0)
-    downloaded = Column(Integer, default=0)
-    uploaded = Column(Integer, default=0)
+    downloaded = Column(BigInteger, default=0)
+    uploaded = Column(BigInteger, default=0)
 
 
 class Document(Base):
