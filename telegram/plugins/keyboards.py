@@ -36,7 +36,7 @@ def show_folder_content(client: Client, callback_query: CallbackQuery):
         pagination_count = int(os.environ.get('PAGINATION_COUNT'))
         keyboard = []
 
-        queryset_paginated = KeyboardPagination(directory.sub_directories + directory.documents, pagination_count, 1, 'keyboard')
+        queryset_paginated = KeyboardPagination(directory.sub_directories + directory.documents.order_by(Document.download_count.desc()), pagination_count, 1, 'keyboard')
         for query_obj in queryset_paginated.get_page_objects():
             if type(query_obj) == Directory:
                 keyboard.append([
