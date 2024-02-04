@@ -1,8 +1,10 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.errors import FloodWait
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 import os
+from time import sleep
 
 from database.engine import engine
 from database.models import BotUser
@@ -37,6 +39,7 @@ def set_study_field(client: Client, callback_query: CallbackQuery):
 @Client.on_callback_query(filters.user(os.environ.get('ADMIN_ID')) & filters.regex("^send_as_forwarded-(.*)$"))
 def forward_broad_cast(client: Client, callback_query: CallbackQuery):
     study_field = callback_query.data.split('-')[-1]
+    sent_count = 0
 
     if study_field == "all":
         with Session(engine) as session:
@@ -44,6 +47,11 @@ def forward_broad_cast(client: Client, callback_query: CallbackQuery):
             for user in bot_users:
                 try:
                     callback_query.message.reply_to_message.forward(user.user_id)
+                    sent_count += 1
+                except FloodWait as e:
+                    sleep(e)
+                    callback_query.message.reply_to_message.forward(user.user_id)
+                    sent_count += 1
                 except:
                     continue
     else:
@@ -52,9 +60,14 @@ def forward_broad_cast(client: Client, callback_query: CallbackQuery):
             for user in selected_users:
                 try:
                     callback_query.message.reply_to_message.forward(user.user_id)
+                    sent_count += 1
+                except FloodWait as e:
+                    sleep(e)
+                    callback_query.message.reply_to_message.forward(user.user_id)
+                    sent_count += 1
                 except:
                     continue
-    callback_query.message.edit_text("پیام با موفقیت ارسال شد!")
+    callback_query.message.edit_text(f"پیام با موفقیت به [{sent_count}] کاربر ارسال شد!")
 
 
 @Client.on_callback_query(filters.user(os.environ.get('ADMIN_ID')) & filters.regex("^send_as_copy-(.*)$"))
