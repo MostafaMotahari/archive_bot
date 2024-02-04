@@ -49,7 +49,7 @@ def forward_broad_cast(client: Client, callback_query: CallbackQuery):
                     callback_query.message.reply_to_message.forward(user.user_id)
                     sent_count += 1
                 except FloodWait as e:
-                    sleep(e)
+                    sleep(e.value)
                     callback_query.message.reply_to_message.forward(user.user_id)
                     sent_count += 1
                 except:
@@ -62,7 +62,7 @@ def forward_broad_cast(client: Client, callback_query: CallbackQuery):
                     callback_query.message.reply_to_message.forward(user.user_id)
                     sent_count += 1
                 except FloodWait as e:
-                    sleep(e)
+                    sleep(e.value)
                     callback_query.message.reply_to_message.forward(user.user_id)
                     sent_count += 1
                 except:
