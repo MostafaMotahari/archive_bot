@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from database.models import Statistics, Directory, Document
 from database.engine import engine
 from plugins.keyboard_pagination import KeyboardPagination
+from plugins.utils import folder_share_link_generator
 
 
 @Client.on_message(filters.private & filters.regex("^📖 لیست رشته ها 📖$"))
@@ -29,9 +30,9 @@ def show_root_dir(client: Client, callback_query: CallbackQuery):
 
 
 @Client.on_callback_query(filters.regex("^lskeyboard-(.*)$"))
-def show_folder_content(client: Client, callback_query: CallbackQuery):
+def show_folder_content(client: Client, callback_query: CallbackQuery=None, message: Message=None, parsed_directory_id: str=None):
+    directory_id = parsed_directory_id or callback_query.data.split('-')[-1]
     with Session(engine) as session:
-        directory_id = callback_query.data.split('-')[-1]
         directory = session.scalar(select(Directory).where(Directory.id == int(directory_id)))
         pagination_count = int(os.environ.get('PAGINATION_COUNT'))
         keyboard = []
@@ -70,10 +71,20 @@ def show_folder_content(client: Client, callback_query: CallbackQuery):
                 InlineKeyboardButton("🔝 برگشت به فولدر قبلی 🔝", callback_data=f"lskeyboard-{directory.parent.id}")
             ])
 
-    callback_query.message.edit_text(
-        "🗄 فولدر یا فایل مورد نظرتو انتخاب کن:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
+        keyboard.append([
+            InlineKeyboardButton("🔗 اشتراک گذاری این فولدر🔗", url=folder_share_link_generator(int(directory_id)))
+        ])
+
+    if callback_query:
+        callback_query.message.edit_text(
+            "🗄 فولدر یا فایل مورد نظرتو انتخاب کن:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+    else:
+        message.reply_text(
+            "🗄 فولدر یا فایل مورد نظرتو انتخاب کن:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
 
 
 @Client.on_callback_query(filters.regex("^dn-(.*)$"))

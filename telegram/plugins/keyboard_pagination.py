@@ -1,12 +1,13 @@
 import os
 
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database.models import Directory, Document
+from database.models import Directory
 from database.engine import engine
+from plugins.utils import folder_share_link_generator
 
 
 class KeyboardPagination:
@@ -87,6 +88,9 @@ def paginator(client: Client, callback_query: CallbackQuery):
             keyboard.append(pagination_row)
 
     keyboard.append(callback_query.message.reply_markup.inline_keyboard[-1])
+    keyboard.append([
+        InlineKeyboardButton("🔗 اشتراک گذاری این فولدر🔗", url=folder_share_link_generator(directory_id))
+    ])
 
     callback_query.message.edit_text(
         "🗄 فولدر یا فایل مورد نظرتو انتخاب کن:",
