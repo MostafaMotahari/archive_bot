@@ -69,7 +69,7 @@ class Directory(Base):
     parent_id: Mapped[int] = mapped_column(ForeignKey("directory.id"), nullable=True)
     parent: Mapped["Directory"] = relationship(back_populates="sub_directories", remote_side=[id])
     sub_directories: Mapped[List["Directory"]] = relationship(back_populates="parent", cascade="all")
-    documents: Mapped[List["Document"]] = relationship(back_populates="directory", cascade="all")
+    documents: Mapped[List["Document"]] = relationship(back_populates="directory", cascade="all", order_by="desc(Document.download_count)")
 
 
 class Tag(Base):

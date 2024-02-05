@@ -59,9 +59,9 @@ def paginator(client: Client, callback_query: CallbackQuery):
         keyboard = []
 
         if switch_type == "next":
-            queryset_paginated = KeyboardPagination(directory.sub_directories + directory.documents.order_by(Document.download_count.desc()), pagination_count, intended_page_number, action_type)
+            queryset_paginated = KeyboardPagination(directory.sub_directories + directory.documents, pagination_count, intended_page_number, action_type)
         else:
-            queryset_paginated = KeyboardPagination(directory.sub_directories + directory.documents.order_by(Document.download_count.desc()), pagination_count, intended_page_number, action_type)
+            queryset_paginated = KeyboardPagination(directory.sub_directories + directory.documents, pagination_count, intended_page_number, action_type)
 
         for query_obj in queryset_paginated.get_page_objects():
             if type(query_obj) == Directory:
