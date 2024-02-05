@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from database.models import BotUser, Statistics
 from database.engine import engine
+from plugins.keyboards import show_folder_content
 
 
 @Client.on_message(filters.private & filters.regex("^/start$"))
@@ -35,6 +36,10 @@ def start_message(client: Client, message: Message):
         )
     )
 
+
+@Client.on_message(filters.private & filters.regex("^/start dir_(.*)$"))
+def show_shared_dir_content(client:Client, message: Message):
+    show_folder_content(client, message=message, parsed_directory_id=message.text.split(' ')[-1].split('_')[-1])
 
 
 @Client.on_message(filters.private & filters.regex("^📓ارسال جزوه📓$"))
