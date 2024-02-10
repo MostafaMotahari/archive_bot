@@ -35,7 +35,9 @@ def get_absolute_file_path(file: Document):
     with Session(engine) as session:
         directory = file.directory
         path = f"/{file.title}"
-        while directory.parent_id:
-            path = f"/{directory.title}" + path
+        while True:
+            path = f"/{directory.name}" + path
+            if not directory.parent_id:
+                break
             directory = session.scalar(select(Directory).where(Directory.id == directory.parent_id))
-        return "/home/archive_bot" + path
+        return "/home/archive_bot/docs_repo" + path
