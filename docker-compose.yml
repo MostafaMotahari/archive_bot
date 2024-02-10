@@ -34,6 +34,20 @@ services:
       - db
     volumes:
       - "./db_redis:/data"
+  pgweb:
+    image: sosedoff/pgweb
+    ports:
+      - "8081:8081"
+    links:
+      - postgresql:postgresql
+    environment:
+      - DATABASE_URL=postgresql://archive_bot:archive_bot@postgresql:5432/archive_bot?sslmode=disable
+      - PGWEB_AUTH_USER=archive_bot
+      - PGWEB_AUTH_PASS=archive_bot
+    depends_on:
+      - postgresql
+    networks:
+      - db
 
 networks:
   db:
