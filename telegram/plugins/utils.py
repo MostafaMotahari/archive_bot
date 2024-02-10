@@ -4,7 +4,7 @@ from urllib import parse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database.models import Directory
+from database.models import Directory, Document
 from database.engine import engine
 
 
@@ -29,3 +29,13 @@ def folder_share_link_generator(folder_id: int):
         encoded_text = parse.quote(text)
         complete_url = f"tg://msg_url?url={encoded_text}"
         return complete_url
+
+
+def get_absolute_file_path(file: Document):
+    with Session(engine) as session:
+        directory = file.directory
+        path = f"/{file.title}"
+        while directory.parent_id:
+            path = f"/{directory.title}" + path
+            directory = session.scalar(select(Directory).where(Directory.id == directory.parent_id))
+        return "/home/archive_bot" + path
