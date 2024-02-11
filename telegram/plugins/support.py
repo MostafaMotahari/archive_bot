@@ -59,7 +59,7 @@ def submit_docs_ls_explore(client: Client, callback_query: CallbackQuery):
         sub_directories = session.scalars(select(Directory).where(Directory.parent_id == int(directory_id))).all()
         keyboard = [[InlineKeyboardButton(sub_directory.persian_title, callback_data=f"submitls-{'/'.join(callback_query.data.split('-')[-1].split('/')[:-2])}/{sub_directory.id}/{message_id}/")]
                     for sub_directory in sub_directories]
-        if len(directory_path := callback_query.data.split('/')) > 2:
+        if len(callback_query.data.split('/')) > 2:
             keyboard.append([InlineKeyboardButton("بازگشت به فولدر قبلی", callback_data=f"submitls-{'/'.join(callback_query.data.split('-')[-1].split('/')[:-2])}/{message_id}/")])
         keyboard.append([InlineKeyboardButton("ثبت در انیجا", callback_data=f"submitdoc-{callback_query.data.split('-')[-1]}")])
 
@@ -164,12 +164,16 @@ def submit_doc_ls_bulk(client: Client, callback_query: CallbackQuery):
 def submit_docs_ls_explore_bulk(client: Client, callback_query: CallbackQuery):
     with Session(engine) as session:
         directory_id = callback_query.data.split('-')[-1].split('/')[-2]
+        print(directory_id)
         sub_directories = session.scalars(select(Directory).where(Directory.parent_id == int(directory_id))).all()
-        keyboard = [[InlineKeyboardButton(sub_directory.persian_title, callback_data=f"submitlsbulk-{'/'.join(callback_query.data.split('-')[-1].split('/')[:-2])}/{sub_directory.id}/")]
+        keyboard = [[InlineKeyboardButton(sub_directory.persian_title, callback_data=f"submitlsbulk-{'/'.join(callback_query.data.split('-')[-1].split('/')[:-1])}/{sub_directory.id}/")]
                     for sub_directory in sub_directories]
-        if len(directory_path := callback_query.data.split('/')) > 2:
+        if len(callback_query.data.split('/')) > 2:
             keyboard.append([InlineKeyboardButton("بازگشت به فولدر قبلی", callback_data=f"submitlsbulk-{'/'.join(callback_query.data.split('-')[-1].split('/')[:-2])}/")])
+        elif len(callback_query.data.split('/')) == 2:
+            keyboard.append([InlineKeyboardButton("بازگشت به فولدر قبلی", callback_data=f"submitlsbulk-{callback_query.data.split('-')[-1]}")])
         keyboard.append([InlineKeyboardButton("ثبت در انیجا", callback_data=f"submitdocbulk-{callback_query.data.split('-')[-1]}")])
+        print(keyboard)
 
         callback_query.message.edit_text(
             "⬅️ محل ایجاد فولدر رو انتخاب کن:",
@@ -193,7 +197,9 @@ def bulk_upload_docs(client: Client, callback_query: CallbackQuery):
         user = session.scalar(select(BotUser).where(BotUser.user_id == callback_query.from_user.id))
 
         for message in messages:
-            path_to_upload = cmd_to_path('/'.join(callback_query.data.split('-')[-1].split('/')))
+            path_to_upload = cmd_to_path(callback_query.data.split('-')[-1])
+            print(path_to_upload)
+            print(callback_query.data)
             message.download(path_to_upload)
             document_size = os.path.getsize(os.path.join(path_to_upload, message.document.file_name))
             statistics.uploaded += document_size

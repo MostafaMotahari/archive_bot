@@ -87,7 +87,7 @@ def paginator(client: Client, callback_query: CallbackQuery):
                 pagination_row.append(InlineKeyboardButton("▶️ قبلی", callback_data=f"{queryset_paginated.previous_page_uri}_{directory.id}"))
             keyboard.append(pagination_row)
 
-    keyboard.append(callback_query.message.reply_markup.inline_keyboard[-1])
+    keyboard.append(callback_query.message.reply_markup.inline_keyboard[-2])
     keyboard.append([
         InlineKeyboardButton("🔗 اشتراک گذاری این فولدر🔗", url=folder_share_link_generator(directory_id))
     ])
