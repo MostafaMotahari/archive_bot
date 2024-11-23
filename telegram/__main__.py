@@ -1,13 +1,7 @@
-from telethon import TelegramClient
-import os
+from .client.client_manager import client_object, plugin_manager
 
-
-app = TelegramClient(
-    os.environ.get('PROJECT_NAME'),
-    api_id=int(os.environ.get('API_ID')),
-    api_hash=os.environ.get('API_HASH'),
-    bot_token=os.environ.get('BOT_TOKEN')
-)
-
-app.start()
-app.run_until_disconnected()
+if __name__ == "__main__":
+    num_imported = plugin_manager()
+    client_object.start()
+    print(f"Number of plugins imported: {num_imported}")
+    client_object.run_until_disconnected()

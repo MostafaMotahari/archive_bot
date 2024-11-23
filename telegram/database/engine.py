@@ -5,5 +5,5 @@ from redis import Redis
 
 engine = create_engine(os.environ.get("DB_URL"))
 session = Session(engine)
-redis = Redis('redis', port=6379)
+redis = Redis('localhost', port=6379)
 
