@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 from sqlalchemy import ForeignKey
@@ -68,7 +68,7 @@ class Tag(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(index=True)
     files: Mapped[List[FileInTelegramCloud]] = relationship(secondary="tag_file_rel", back_populates="tags")
-    categories: Mapped[List["Category"]] = relationship(secondary="category_tag_rel", back_populates="tags")
+    categories: Mapped[List["Category"]] = relationship(secondary="category_tag_rel", back_populates="")
 
 
 class Log(Base):
@@ -85,5 +85,6 @@ class Directory(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column()
-    parent_dir_id: Mapped[int] = mapped_column(ForeignKey("directory.id"), primary_key=True)
-    parent_dir: Mapped[List["Directory"]] = relationship(back_populates="sub_directories")
+    parent_dir_id: Mapped[Optional[int]] = mapped_column(ForeignKey("directory.id"))
+    parent_dir: Mapped[Optional["Directory"]] = relationship(back_populates="sub_directories", remote_side=[id])
+    sub_directories: Mapped[List["Directory"]] = relationship(back_populates="parent_dir")
