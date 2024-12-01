@@ -7,6 +7,10 @@ bot_credentials = {
     "BOT_TOKEN": "value4",
     "DB_URL": "",
     "SITE_URL": "",
+
+    "SESSION_SECRET_KEY": "",
+    "GOOGLE_CLIENT_ID": "",
+    "GOOGLE_CLIENT_SECRET": "",
 }
 
 for key, value in bot_credentials.items():
