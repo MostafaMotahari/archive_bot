@@ -10,6 +10,19 @@ class Base(AsyncAttrs, DeclarativeBase):
     pass
 
 
+class ModeratorUser(Base):
+    __tablename__ = "moderator_user"
+
+    id: Mapped[int] = mapped_column(primary_key=True, unique=True)
+    email: Mapped[str] = mapped_column(unique=True, index=True)
+    password: Mapped[str] = mapped_column()
+    auth_token: Mapped[str] = mapped_column(nullable=True)
+    permission: Mapped[str] = mapped_column()
+    is_active: Mapped[bool] = mapped_column(default=True)
+    user: Mapped["User"] = relationship(back_populates="moderator_user")
+    verified_files: Mapped[List["FileInTelegramCloud"]] = relationship(back_populates="verified_by")
+
+
 class User(Base):
     __tablename__ = 'users'
 
@@ -18,6 +31,8 @@ class User(Base):
     semester: Mapped[int] = mapped_column(default=1)
     field_of_study: Mapped[str] = mapped_column()
     notifications: Mapped[bool] = mapped_column(default=True)
+    moderator_user_id: Mapped[int] = mapped_column(ForeignKey("moderator_user.id"), unique=True)
+    moderator_user: Mapped["ModeratorUser"] = relationship(back_populates="user", single_parent=True)
 
 
 class Statistics(Base):
@@ -39,7 +54,7 @@ class Category(Base):
     __tablename__ = "category"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column()
+    title: Mapped[str] = mapped_column(index=True)
     tags: Mapped[List["Tag"]] = relationship(secondary="category_tag_rel", back_populates="categories")
 
 
@@ -58,8 +73,12 @@ class FileInTelegramCloud(Base):
     title: Mapped[str] = mapped_column(index=True)
     file_id: Mapped[str] = mapped_column(index=True)
     description: Mapped[str] = mapped_column()
-    creation_date: Mapped[datetime] = mapped_column(default=datetime.now())
     tags: Mapped[List["Tag"]] = relationship(secondary="tag_file_rel", back_populates="files")
+    verification_time: Mapped[datetime] = mapped_column(default=datetime.now())
+    verified_by_id: Mapped["ModeratorUser"] = mapped_column(ForeignKey("moderator_user.id"))
+    verified_by: Mapped["ModeratorUser"] = relationship(back_populates="verified_files")
+    teacher_id: Mapped[int] = mapped_column(ForeignKey("teacher_cv.id"))
+    teacher: Mapped["TeacherCV"] = relationship(back_populates="files")
 
 
 class Tag(Base):
@@ -84,7 +103,15 @@ class Directory(Base):
     __tablename__ = "directory"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column()
+    title: Mapped[str] = mapped_column(index=True)
     parent_dir_id: Mapped[Optional[int]] = mapped_column(ForeignKey("directory.id"))
     parent_dir: Mapped[Optional["Directory"]] = relationship(back_populates="sub_directories", remote_side=[id])
     sub_directories: Mapped[List["Directory"]] = relationship(back_populates="parent_dir")
+
+
+class TeacherCV(Base):
+    __tablename__ = "teacher_cv"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    full_name: Mapped[str] = mapped_column(index=True)
+    files: Mapped[List["FileInTelegramCloud"]] = relationship(back_populates="teacher")
