@@ -1,11 +1,13 @@
 import os
 from urllib import parse
 
+from telethon.custom import Message
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from database.models import Directory, Document
-from database.engine import engine
+from database.models import Directory, Document, BotUser
+from database.engine import engine, redis
 
 
 def cmd_to_path(cmd: str):
@@ -41,3 +43,18 @@ def get_absolute_file_path(file: Document):
                 break
             directory = session.scalar(select(Directory).where(Directory.id == directory.parent_id))
         return "/home/archive_bot/docs_repo" + path
+
+
+async def anti_spam(event: Message) -> bool:
+    user_cache_key = 'spam_cache_' + str(await event.from_id.user_id)
+    if redis.get(user_cache_key, None):
+        await event.reply('لطفاً از ارسال پیام‌های تکراری یا غیرمرتبط خودداری کنید.')
+        return False
+    redis.setex(user_cache_key, 1, user_cache_key)
+    return True
+
+
+async def load_caches():
+    async with async_sessionmaker(engine, expire_on_commit=True) as session:
+        users = await session.scalars(select(BotUser.user_id)).all()
+        redis.sadd('cached_user_ids', list(users))
