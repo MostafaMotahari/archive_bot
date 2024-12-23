@@ -1,22 +1,13 @@
-from pyrogram import Client
-import os
-from database.models import Statistics
-from database.engine import engine
-from sqlalchemy.orm import Session
-
-
-app = Client(
-    "Mega archive",
-    api_id=os.environ.get('API_ID'),
-    api_hash=os.environ.get('API_HASH'),
-    bot_token=os.environ.get('BOT_TOKEN'),
-    plugins=dict(root="plugins")
-)
+from client.engine import client
+from plugins import *
+from plugins.utils import load_caches
 
 # with Session(engine) as session:
 #     stats = Statistics()
 #     session.add(stats)
 #     session.commit()
 
+# Start-up functions
+# Load caches
 
-app.run()
+client.start()
