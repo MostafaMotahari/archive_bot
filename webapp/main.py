@@ -12,7 +12,7 @@ from .utils.backends import AdminPanelAuth, login_google
 from .views import admin as admin_views
 
 app = Starlette(debug=True)
-app.add_middleware(SessionMiddleware, secret_key=environ.get("SESSION_SECRET_KEY", "None"), max_age=24*60*60)
+app.add_middleware(SessionMiddleware, secret_key=environ.get("SESSION_SECRET_KEY", "None"), max_age=24*60*60, https_only=False)
 
 admin_handler = Admin(
     app,
