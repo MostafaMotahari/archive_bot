@@ -29,14 +29,15 @@ class AdminPanelAuth(AuthenticationBackend):
     async def login(self, request: Request) -> bool:
         return True
 
-    async def logout(self, request) -> bool:
+    async def logout(self, request: Request) -> bool:
         request.session.clear()
         return True
 
-    async def authenticate(self, request) -> Union[bool, RedirectResponse]:
-        user = request.session.get("user")
+    async def authenticate(self, request: Request) -> Union[bool, RedirectResponse]:
+        user = request.session.get('user')
+        print(request.cookies)
+        request.session['kos'] = "Koon"
         if user:
-            raise Exception(user)
             async with engine.connect() as session:
                 moderator_user = await session.scalar(select(ModeratorUser).where(ModeratorUser.email == user["email"]))
                 if moderator_user:
@@ -50,7 +51,7 @@ class AdminPanelAuth(AuthenticationBackend):
 async def login_google(request: Request) -> Response:
     token = await google.authorize_access_token(request)
     user = token.get('userinfo')
-    raise Exception(user)
+    request.session['kos'] = "Koon"
     if user:
         request.session['user'] = user
     return RedirectResponse(request.url_for("admin:index"))
