@@ -8,3 +8,6 @@
 - [ ] plugins/panel.py
 - [ ] plugins/tag_manager.py
 - [ ] plugins/
+
+
+Create a nive manager model like django later
