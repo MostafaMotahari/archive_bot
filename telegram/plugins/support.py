@@ -222,14 +222,12 @@
 # 
 #     redis.delete(f"cmd-{callback_query.message.from_user.id}")
 
-from telethon.events import NewMessage
-from telethon.custom import Message
+from telethon.events import NewMessage, register
 
-from client.engine import client
 from plugins.utils import check_registration
 
 
 @check_registration
-@client.on(NewMessage(pattern='درباره ما'))
-def support(event: Message):
-    event.reply('')
+@register(NewMessage(pattern='درباره ما'))
+async def support(event: NewMessage.Event):
+    await event.reply('')

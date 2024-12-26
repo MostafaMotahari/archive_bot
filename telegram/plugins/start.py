@@ -53,14 +53,12 @@
 #         "☑️ تمام! جزوه ات برای ما ارسال شد و توی آرشیو قرار میگیره. دَمِدَم گرم 🫶"
 #     )
 
-from telethon.events import NewMessage
-from telethon.custom import Message
+from telethon.events import NewMessage, register
 
-from client.engine import client
 from plugins.utils import check_registration
 
 
 @check_registration
-@client.on(NewMessage(pattern='/start'))
-def start(event: Message):
-    event.reply("")
+@register(NewMessage(pattern='/start'))
+async def start(event: NewMessage.Event):
+    await event.reply("goh")
