@@ -55,21 +55,12 @@
 
 from telethon.events import NewMessage
 from telethon.custom import Message
-from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from client.engine import client
-from database.engine import redis, engine
-from database.models import BotUser
+from plugins.utils import check_registration
 
 
+@check_registration
 @client.on(NewMessage(pattern='/start'))
 def start(event: Message):
-    user_id = str(event.from_id.user_id)
-    if not redis.sismember('cached_user_ids', user_id):
-        async with async_sessionmaker(engine, expire_on_commit=True) as session:
-            user = BotUser(user_id=user_id)
-            session.add(user)
-            session.commit()
-            redis.sadd('cached_user_ids', user_id)
-
-    event.reply()
+    event.reply("")

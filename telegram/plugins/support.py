@@ -226,8 +226,10 @@ from telethon.events import NewMessage
 from telethon.custom import Message
 
 from client.engine import client
+from plugins.utils import check_registration
 
 
+@check_registration
 @client.on(NewMessage(pattern='درباره ما'))
 def support(event: Message):
     event.reply('')
