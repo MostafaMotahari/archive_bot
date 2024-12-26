@@ -1,6 +1,7 @@
 import os
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from redis import Redis
 
 engine = create_async_engine(os.environ.get("DB_URL"))
-redis = Redis('redis', port=6379)
+session = async_sessionmaker(engine, expire_on_commit=True)
+redis = Redis('localhost', port=6379)
