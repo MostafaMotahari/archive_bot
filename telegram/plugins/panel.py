@@ -2,13 +2,12 @@ from telethon.events import NewMessage, register
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy import select
 
-from plugins.utils import anti_spam, check_registration
+from plugins.utils import assistant_decorators
 from database.engine import engine
 from database.models import BotUser
 
 
-@check_registration
-@anti_spam
+@assistant_decorators(anti_spam=True)
 @register(NewMessage(pattern=''))
 async def panel(event: NewMessage.Event):
     async with async_sessionmaker(engine, expire_on_commit=True) as session:
