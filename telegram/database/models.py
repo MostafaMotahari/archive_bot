@@ -33,6 +33,7 @@ class User(Base):
     notifications: Mapped[bool] = mapped_column(default=True)
     moderator_user_id: Mapped[int] = mapped_column(ForeignKey("moderator_user.id"), unique=True)
     moderator_user: Mapped["ModeratorUser"] = relationship(back_populates="user", single_parent=True)
+    history: Mapped["UserHistory"] = relationship(back_populates="user")
 
 
 class Statistics(Base):
@@ -75,10 +76,11 @@ class FileInTelegramCloud(Base):
     description: Mapped[str] = mapped_column()
     tags: Mapped[List["Tag"]] = relationship(secondary="tag_file_rel", back_populates="files")
     verification_time: Mapped[datetime] = mapped_column(default=datetime.now())
-    verified_by_id: Mapped["ModeratorUser"] = mapped_column(ForeignKey("moderator_user.id"))
-    verified_by: Mapped["ModeratorUser"] = relationship(back_populates="verified_files")
+    verified_by_id: Mapped[int] = mapped_column(ForeignKey("moderator_user.id"))
+    verified_by: Mapped[ModeratorUser] = relationship(back_populates="verified_files")
     teacher_id: Mapped[int] = mapped_column(ForeignKey("teacher_cv.id"))
     teacher: Mapped["TeacherCV"] = relationship(back_populates="files")
+    histories: Mapped[List["UserHistory"]] = relationship(back_populates="files")
 
 
 class Tag(Base):
@@ -115,3 +117,13 @@ class TeacherCV(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     full_name: Mapped[str] = mapped_column(index=True)
     files: Mapped[List["FileInTelegramCloud"]] = relationship(back_populates="teacher")
+
+
+class UserHistory(Base):
+    __tablename__ = "user_history"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), unique=True)
+    user: Mapped[User] = relationship(back_populates="history", single_parent=True)
+    file_id: Mapped[int] = mapped_column(ForeignKey("file_in_telegram_cloud.id"))
+    file: Mapped[FileInTelegramCloud] = relationship(back_populates="histories")
