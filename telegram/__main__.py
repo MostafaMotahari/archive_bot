@@ -1,6 +1,4 @@
 from os import environ
-@assistant_decorators(anti_spam=True)
-@assistant_decorators(anti_spam=True)
 from telethon import TelegramClient
 
 from plugins import start, panel, inline_search, support

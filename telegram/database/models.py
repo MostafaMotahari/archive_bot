@@ -1,80 +1,117 @@
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, BigInteger, Boolean, String, ForeignKey, Table
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-from typing import List
+from typing import List, Optional
+from datetime import datetime
+
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import DeclarativeBase, Mapped, relationship, mapped_column
+from sqlalchemy.ext.asyncio import AsyncAttrs
 
 
-Base = declarative_base()
-metadata = Base.metadata
+class Base(AsyncAttrs, DeclarativeBase):
+    pass
 
 
-tag_doc_association_table = Table(
-    "association_table",
-    metadata,
-    Column("document_id", ForeignKey("document.id"), primary_key=True),
-    Column("tag_id", ForeignKey("tag.id"), primary_key=True),
-)
+class ModeratorUser(Base):
+    __tablename__ = "moderator_user"
 
-class BotUser(Base):
-    __tablename__ = "bot_user"
+    id: Mapped[int] = mapped_column(primary_key=True, unique=True)
+    email: Mapped[str] = mapped_column(unique=True, index=True)
+    password: Mapped[str] = mapped_column()
+    auth_token: Mapped[str] = mapped_column(nullable=True)
+    permission: Mapped[str] = mapped_column()
+    is_active: Mapped[bool] = mapped_column(default=True)
+    user: Mapped["User"] = relationship(back_populates="moderator_user")
+    verified_files: Mapped[List["FileInTelegramCloud"]] = relationship(back_populates="verified_by")
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id = Column(BigInteger, unique=True, index=True)
-    uploaded_docs = Column(Integer, default=0)
-    is_ban = Column(Boolean, default=False)
-    documents: Mapped[List["Document"]] = relationship(back_populates="user")  
-    receive_notifications = Column(Boolean, default=True)
-    study_field = Column(String, nullable=True)
-    is_superuser = Column(Boolean, default=False)
-    permissions = Column(String, nullable=True)
 
-    def get_all_permissions(self):
-        return self.permissions.split(',')
+class User(Base):
+    __tablename__ = 'users'
 
-    def has_permission(self, permission: str):
-        return permission in self.permissions
+    id: Mapped[int] = mapped_column(primary_key=True, unique=True)
+    telegram_id: Mapped[str] = mapped_column(unique=True, index=True)
+    semester: Mapped[int] = mapped_column(default=1)
+    field_of_study: Mapped[str] = mapped_column()
+    notifications: Mapped[bool] = mapped_column(default=True)
+    moderator_user_id: Mapped[int] = mapped_column(ForeignKey("moderator_user.id"), unique=True)
+    moderator_user: Mapped["ModeratorUser"] = relationship(back_populates="user", single_parent=True)
 
 
 class Statistics(Base):
     __tablename__ = "statistics"
 
-    id = Column(Integer, unique=True, primary_key=True)
-    users_count = Column(Integer, default=0)
-    downloaded = Column(BigInteger, default=0)
-    uploaded = Column(BigInteger, default=0)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    users_count: Mapped[int] = mapped_column(default=0)
 
 
-class Document(Base):
-    __tablename__ = "document"
+class CategoryTagRel(Base):
+    __tablename__ = "category_tag_rel"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    title = Column(String, unique=True, index=True)
-    persian_title = Column(String)
-    path = Column(String, unique=True)
-    download_count = Column(Integer, default=0)
-    file_id = Column(String, unique=True, nullable=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("bot_user.id"), nullable=True) 
-    user: Mapped["BotUser"] = relationship(back_populates="documents")
-    directory_id: Mapped[int] = mapped_column(ForeignKey("directory.id"))
-    directory: Mapped["Directory"] = relationship(back_populates="documents")
-    tags: Mapped[List["Tag"]] = relationship(secondary=tag_doc_association_table, back_populates="documents")
+    category_id: Mapped[int] = mapped_column(ForeignKey("category.id"), primary_key=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), primary_key=True)
 
 
-class Directory(Base):
-    __tablename__ = "directory"
+class Category(Base):
+    __tablename__ = "category"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name = Column(String, unique=True, index=True)
-    persian_title = Column(String)
-    parent_id: Mapped[int] = mapped_column(ForeignKey("directory.id"), nullable=True)
-    parent: Mapped["Directory"] = relationship(back_populates="sub_directories", remote_side=[id])
-    sub_directories: Mapped[List["Directory"]] = relationship(back_populates="parent", cascade="all")
-    documents: Mapped[List["Document"]] = relationship(back_populates="directory", cascade="all", order_by="desc(Document.download_count)")
+    title: Mapped[str] = mapped_column(index=True)
+    tags: Mapped[List["Tag"]] = relationship(secondary="category_tag_rel", back_populates="categories")
+
+
+class TagFileRel(Base):
+    __tablename__ = "tag_file_rel"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    file_id: Mapped[int] = mapped_column(ForeignKey("file_in_telegram_cloud.id"), primary_key=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), primary_key=True)
+
+
+class FileInTelegramCloud(Base):
+    __tablename__ = "file_in_telegram_cloud"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(index=True)
+    file_id: Mapped[str] = mapped_column(index=True)
+    description: Mapped[str] = mapped_column()
+    tags: Mapped[List["Tag"]] = relationship(secondary="tag_file_rel", back_populates="files")
+    verification_time: Mapped[datetime] = mapped_column(default=datetime.now())
+    verified_by_id: Mapped["ModeratorUser"] = mapped_column(ForeignKey("moderator_user.id"))
+    verified_by: Mapped["ModeratorUser"] = relationship(back_populates="verified_files")
+    teacher_id: Mapped[int] = mapped_column(ForeignKey("teacher_cv.id"))
+    teacher: Mapped["TeacherCV"] = relationship(back_populates="files")
 
 
 class Tag(Base):
     __tablename__ = "tag"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name = Column(String, unique=True, index=True)
-    documents: Mapped[List[Document]] = relationship(secondary=tag_doc_association_table, back_populates="tags")
+    title: Mapped[str] = mapped_column(index=True)
+    files: Mapped[List[FileInTelegramCloud]] = relationship(secondary="tag_file_rel", back_populates="tags")
+    categories: Mapped[List["Category"]] = relationship(secondary="category_tag_rel", back_populates="")
+
+
+class Log(Base):
+    __tablename__ = "log"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    level: Mapped[str] = mapped_column(index=True)
+    text: Mapped[str] = mapped_column()
+    time: Mapped[datetime] = mapped_column()
+
+
+class Directory(Base):
+    __tablename__ = "directory"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(index=True)
+    parent_dir_id: Mapped[Optional[int]] = mapped_column(ForeignKey("directory.id"))
+    parent_dir: Mapped[Optional["Directory"]] = relationship(back_populates="sub_directories", remote_side=[id])
+    sub_directories: Mapped[List["Directory"]] = relationship(back_populates="parent_dir")
+
+
+class TeacherCV(Base):
+    __tablename__ = "teacher_cv"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    full_name: Mapped[str] = mapped_column(index=True)
+    files: Mapped[List["FileInTelegramCloud"]] = relationship(back_populates="teacher")
