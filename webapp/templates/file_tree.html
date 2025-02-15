@@ -1,0 +1,55 @@
+{% for file in files %}
+    <div class="mb-2 {% if file.parent %}{% if is_rtl %}mr-4{% else %}ml-4{% endif %}{% endif %} file-item">
+        {% if file.type == 'folder' %}
+            <div class="flex items-center cursor-pointer" onclick="toggleFolder('{{ file.id }}')">
+                <svg class="w-4 h-4 text-sky-600 {% if is_rtl %}ml-2{% else %}mr-2{% endif %} {% if is_rtl %}transform rotate-180{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+                <svg class="w-5 h-5 text-sky-600 {% if is_rtl %}ml-2{% else %}mr-2{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                </svg>
+                <span class="text-sky-800 font-medium">{% if is_rtl %}{{ file.persian_name }}{% else %}{{ file.name }}{% endif %}</span>
+            </div>
+            <div id="folder-{{ file.id }}" class="hidden">
+                {% with files=file.children.all %}
+                    {% include 'file_tree.html' with context %}
+                {% endwith %}
+            </div>
+        {% else %}
+            <div class="flex items-center justify-between p-2 hover:bg-sky-100 rounded-md transition-colors">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-sky-600 {% if is_rtl %}ml-2{% else %}mr-2{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    <span class="text-sky-800">{% if is_rtl %}{{ file.persian_name }}{% else %}{{ file.name }}{% endif %}</span>
+                </div>
+                <div class="flex items-center {% if is_rtl %}space-x-reverse{% endif %} space-x-4">
+                    <div class="flex items-center text-sky-600">
+                        <svg class="w-4 h-4 {% if is_rtl %}ml-1{% else %}mr-1{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        <span class="text-sm">{{ file.uploader_name }}</span>
+                    </div>
+                    <div class="flex items-center text-sky-600">
+                        <svg class="w-4 h-4 {% if is_rtl %}ml-1{% else %}mr-1{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        <span class="text-sm">{{ file.download_count }}</span>
+                    </div>
+                    <div class="flex items-center text-sky-600 cursor-pointer" onclick="likeFile('{{ file.id }}')">
+                        <svg class="w-4 h-4 {% if is_rtl %}ml-1{% else %}mr-1{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+                <span class="text-sm" id="likes-{{ file.id }}">{{ file.likes_count }}</span>
+            </div>
+            <button onclick="showDownloadModal('{{ file.id }}', '{% if is_rtl %}{{ file.persian_name }}{% else %}{{ file.name }}{% endif %}')" class="bg-sky-500 text-white px-2 py-1 rounded text-sm hover:bg-sky-600 transition-colors">
+                {% if is_rtl %}دانلود{% else %}Download{% endif %}
+            </button>
+            <button onclick="showInfoModal('{{ file.id }}', '{% if is_rtl %}{{ file.persian_name }}{% else %}{{ file.name }}{% endif %}', '{{ file.uploader_name }}', '{{ file.download_count }}', '{{ file.likes_count }}')" class="bg-sky-500 text-white px-2 py-1 rounded text-sm hover:bg-sky-600 transition-colors">
+                {% if is_rtl %}اطلاعات{% else %}Info{% endif %}
+            </button>
+        </div>
+    </div>
+{% endif %}
+</div>
+{% endfor %}

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت فایل</title>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-blue-50 text-gray-800">
+    <div class="container mx-auto p-4" x-data="fileManager()">
+        <h1 class="text-2xl font-bold mb-4">مدیریت فایل</h1>
+        <div class="mb-4 flex items-center">
+            <button @click="goBack()" class="bg-blue-500 text-white px-4 py-2 rounded-md mx-2"
+                x-show="currentPath.length > 1">
+                بازگشت
+            </button>
+            <div class="relative w-full">
+                <input type="text" x-model="searchQuery" placeholder="جستجو..."
+                    class="border border-gray-300 rounded-md px-4 py-2 w-full pl-10">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
+        </div>
+        <nav class="flex flex-wrap bg-blue-100 p-2 rounded-md mb-4">
+            <template x-for="(pk, index) in currentPath" :key="index">
+                <span class="ml-2">
+                    <a href="#" @click.prevent="navigateTo(index)" class="text-blue-600 hover:text-blue-800"
+                        x-text="getPathTitle(pk)"></a>
+                    <span x-show="index < currentPath.length - 1">/</span>
+                </span>
+            </template>
+        </nav>
+
+        <div x-show="isLoading" class="flex justify-center items-center py-12">
+            <div class="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+
+        <ul x-show="!isLoading" class="space-y-2">
+            <template x-for="item in filteredItems" :key="item.title">
+                <li :class="{'bg-white hover:bg-blue-50': item.type === 'folder', 'bg-white hover:bg-blue-50': item.type !== 'folder'}"
+                    class="rounded-md shadow-sm">
+                    <div class="flex items-center p-3 cursor-pointer">
+                        <i :class="getIcon(item.type)" class="text-gray-500 text-xl ml-3"></i>
+                        <span @click="item.type === 'folder' ? openItem(item) : showDownloadModald(item)"
+                            class="truncate text-sm sm:text-base mx-2" x-text="item.title"></span><span
+                            x-show="item.type === 'folder'"
+                            class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2"
+                            x-text="`${item.items_count} مورد`"></span>
+                        <span x-show="item.type !== 'folder'"
+                            class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full mx-2"
+                            x-text="formatFileSize(item.size)"></span>
+                        <template x-if="item.recommended">
+                            <span
+                                class="bg-green-100 text-green-800 text-xs font-semibold mr-1 px-2.5 py-0.5 rounded">پیشنهادی</span>
+                        </template>
+                        <span class="flex-grow"></span>
+                        <template x-if="item.type !== 'folder'">
+                            <div class="flex items-center justify-center space-x-4 mr-4">
+                                <div class="hidden sm:flex items-center space-x-1">
+                                    <i class="fas fa-download sm:me-1 text-gray-500"></i>
+                                    <span x-text="item.downloads" class="text-sm mt-1 text-gray-500"></span>
+                                </div>
+                                <span class="hidden sm:block"> </span>
+                                <button @click.stop="likeItem(item)"
+                                    class="flex items-center justify-center space-x-1 focus:outline-none"
+                                    :class="{'text-red-500': item.liked}">
+                                    <i class="fas fa-heart sm:me-1 transition-transform duration-200 ease-in-out"
+                                        :class="{'transform scale-125': item.liked}"></i>
+                                    <span x-text="item.likes" class="text-sm mt-1 hidden sm:inline"></span>
+                                </button>
+                            </div>
+                        </template>
+                        <template x-if="item.type !== 'folder'">
+                            <div class="relative" x-data="{ open: false }">
+                                <button @click.stop="open = !open"
+                                    class="p-1 rounded-full hover:bg-gray-200 focus:outline-none">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div x-show="open" @click.away="open = false"
+                                    class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                                    <div class="py-1" role="menu" aria-orientation="vertical"
+                                        aria-labelledby="options-menu">
+                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                            role="menuitem" @click.stop.prevent="shareItem(item)">
+                                            <i class="fas fa-share-alt ml-2"></i>اشتراک‌گذاری
+                                        </a>
+                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                            role="menuitem" @click.stop.prevent="showInfo(item); open = false;">
+                                            <i class="fas fa-info-circle ml-2"></i>اطلاعات
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </li>
+            </template>
+        </ul>
+
+        <!-- Info Modal -->
+        <div x-show="showInfoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full"
+            x-cloak @click.away="showInfoModal = false">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" x-text="modalItem.name"></h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500 my-1">
+                            <i class="fas fa-user ml-2"></i>
+                            <span x-text="`آپلودکننده: ${modalItem.uploader}`"></span>
+                        </p>
+                        <p class="text-sm text-gray-500 my-1">
+                            <i class="fas fa-calendar-alt ml-2"></i>
+                            <span x-text="`تاریخ آپلود: ${modalItem.uploadDate}`"></span>
+                        </p>
+                        <p class="text-sm text-gray-500 my-1">
+                            <i class="fas fa-heart ml-2"></i>
+                            <span x-text="`تعداد لایک‌ها: ${modalItem.likes}`"></span>
+                        </p>
+                        <p class="text-sm text-gray-500 my-1">
+                            <i class="fas fa-download ml-2"></i>
+                            <span x-text="`تعداد دانلودها: ${modalItem.downloads}`"></span>
+                        </p>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button @click="showInfoModal = false"
+                            class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                            بستن
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download Modal -->
+        <div x-show="showDownloadModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full"
+            x-cloak @click.away="showDownloadModal = false">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">انتخاب روش دانلود</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500">آیا می‌خواهید فایل را مستقیماً دانلود کنید یا می‌خواهید آن را
+                            در تلگرام دریافت کنید؟</p>
+                    </div>
+                    <div class="items-center px-4 py-3 space-y-2">
+                        <button @click="downloadDirectly"
+                            class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                            <i class="fas fa-download ml-2"></i>دانلود مستقیم
+                        </button>
+                        <button @click="downloadViaTelegram"
+                            class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300">
+                            <i class="fab fa-telegram-plane ml-2"></i>دریافت در تلگرام
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function fileManager() {
+            return {
+                currentPath: [null],
+                showInfoModal: false,
+                showDownloadModal: false,
+                modalItem: {},
+                searchQuery: '',
+                isLoading: false,
+                currentItems: [],
+                realPathGenerator() {
+                    var path = "";
+                    for (var i = 0; i < currentPath.length; i++) {
+                        path += currentPath[i];
+                        if (i < currentPath - 1) {
+                            path += "/";
+                        }
+                    }
+                    return path;
+                },
+                getPathTitle(pk) {
+                    return this.currentItems.find(item => item.pk === pk) ?? 'خانه';
+                },
+                async fetchFolderContents(path) {
+                    this.isLoading = true;
+                    // Simulating API call with setTimeout
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    // This is where you would normally fetch data from an API
+                    // For this example, we'll use static data
+                    // const allFiles = [
+                    //     { name: 'پوشه اسناد', type: 'folder', itemCount: 2, items: [
+                    //         { name: 'گزارش سالانه.pdf', type: 'pdf', size: 2500000, downloads: 15, likes: 7, liked: false, uploader: 'علی احمدی', uploadDate: '1400/03/15', recommended: true },
+                    //         { name: 'قرارداد.docx', type: 'doc', size: 1200000, downloads: 8, likes: 3, liked: false, uploader: 'مریم محمدی', uploadDate: '1400/04/20' }
+                    //     ]},
+                    //     { name: 'پوشه تصاویر', type: 'folder', itemCount: 2, items: [
+                    //         { name: 'عکس خانوادگی.jpg', type: 'image', size: 3500000, downloads: 25, likes: 12, liked: false, uploader: 'رضا کریمی', uploadDate: '1400/05/10', recommended: true },
+                    //         { name: 'لوگو شرکت.png', type: 'image', size: 1800000, downloads: 30, likes: 18, liked: false, uploader: 'سارا حسینی', uploadDate: '1400/06/05' }
+                    //     ]},
+                    //     { name: 'یادداشت مهم.txt', type: 'text', size: 50000, downloads: 5, likes: 2, liked: false, uploader: 'حسن رضایی', uploadDate: '1400/07/01' },
+                    //     { name: 'فایل پشتیبان.zip', type: 'archive', size: 150000000, downloads: 10, likes: 5, liked: false, uploader: 'زهرا علوی', uploadDate: '1400/08/15', recommended: true }
+                    // ];
+                    var pkPath = "";
+                    if (path.at(-1) !== null) { pkPath += "/" + path.at(-1) }
+
+                    let response = await fetch('/file_manager_alter' + pkPath, { method: 'GET' });
+                    if (!response.ok) {
+                        throw new Error("Error in loading data from server!");
+                    }
+                    let data = await response.json();
+                    console.log(data);
+                    this.currentItems = data['items'];
+                    this.isLoading = false;
+                },
+                get filteredItems() {
+                    return this.currentItems.filter(item =>
+                        item.title.toLowerCase().includes(this.searchQuery.toLowerCase())
+                    );
+                },
+                navigateTo(index) {
+                    this.currentPath = this.currentPath.slice(0, index + 1);
+                    this.fetchFolderContents(this.currentPath);
+                },
+                async openItem(item) {
+                    if (item.type === 'folder') {
+                        this.currentPath.push(item.pk);
+                        await this.fetchFolderContents(this.currentPath);
+                    }
+                },
+                async goBack() {
+                    if (this.currentPath.length > 1) {
+                        this.currentPath.pop();
+                        await this.fetchFolderContents(this.currentPath);
+                    }
+                },
+                likeItem(item) {
+                    item.liked = !item.liked;
+                    item.likes += item.liked ? 1 : -1;
+                },
+                shareItem(item) {
+                    alert(`اشتراک‌گذاری ${item.name}`);
+                },
+                showInfo(item) {
+                    this.modalItem = item;
+                    this.showInfoModal = true;
+                },
+                showDownloadModald(item) {
+                    if (item.type !== 'folder') {
+                        this.modalItem = item;
+                        this.showDownloadModal = true;
+                    }
+                },
+                getIcon(type) {
+                    const icons = {
+                        folder: 'fas fa-folder',
+                        pdf: 'fas fa-file-pdf',
+                        doc: 'fas fa-file-word',
+                        image: 'fas fa-file-image',
+                        text: 'fas fa-file-alt',
+                        archive: 'fas fa-file-archive'
+                    };
+                    return icons[type] || 'fas fa-file';
+                },
+                downloadDirectly() {
+                    alert(`دانلود ${this.modalItem.name} شروع شد.`);
+                    this.showDownloadModal = false;
+                },
+                downloadViaTelegram() {
+                    alert(`دانلود ${this.modalItem.name} از طریق تلگرام شروع شد.`);
+                    this.showDownloadModal = false;
+                },
+                formatFileSize(bytes) {
+                    if (bytes === 0) return '0 Bytes';
+                    const k = 1024;
+                    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                },
+                init() {
+                    this.fetchFolderContents(this.currentPath);
+                }
+            };
+        }
+    </script>
+</body>
+
+</html>

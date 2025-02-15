@@ -1,0 +1,150 @@
+{% extends '_base.html' %}
+
+{% block title %}QUT Archive - File Manager{% endblock %}
+
+{% block extra_head %}
+<style>
+    .hidden { display: none; }
+    .rtl { direction: rtl; font-family: 'Vazirmatn', sans-serif; }
+    .ltr { direction: ltr; }
+    .folder-focus .file-item:not(.focused) { opacity: 0.5; }
+    .folder-focus .file-item.focused { transform: scale(1.05); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="file-manager" class="p-4 md:p-8 {% if is_rtl %}rtl{% else %}ltr{% endif %} h-screen overflow-hidden">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-sky-800">{% if is_rtl %}آرشیو QUT{% else %}QUT Archive{% endif %}</h1>
+        <button onclick="toggleRTL()" class="px-3 py-1 bg-sky-500 text-white rounded hover:bg-sky-600 transition-colors">
+            {% if is_rtl %}Switch to LTR{% else %}تغییر به RTL{% endif %}
+        </button>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-4 h-[calc(100vh-120px)] overflow-y-auto">
+        {% include 'file_tree.html' with context %}
+    </div>
+
+    <!-- Download Modal -->
+    <div id="download-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg max-w-md w-full">
+            <h2 id="download-modal-title" class="text-xl font-bold mb-4"></h2>
+            <p class="mb-4">{% if is_rtl %}چگونه می‌خواهید فایل را دانلود کنید؟{% else %}How do you want to download the file?{% endif %}</p>
+            <div class="flex justify-center space-x-4">
+                <button onclick="downloadFile()" class="bg-sky-500 text-white px-4 py-2 rounded hover:bg-sky-600 transition-colors flex items-center">
+                    <svg class="w-5 h-5 {% if is_rtl %}ml-2{% else %}mr-2{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    {% if is_rtl %}دانلود در دستگاه{% else %}Download to device{% endif %}
+                </button>
+                <button onclick="sendTelegram()" class="bg-sky-500 text-white px-4 py-2 rounded hover:bg-sky-600 transition-colors flex items-center">
+                    <svg class="w-5 h-5 {% if is_rtl %}ml-2{% else %}mr-2{% endif %}" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2s-.21-.05-.3-.03c-.1.02-1.76 1.11-4.95 3.28-.47.32-.89.47-1.27.46-.42-.01-1.22-.24-1.82-.44-.73-.24-1.31-.37-1.26-.79.03-.24.37-.49 1.02-.75 3.98-1.73 6.64-2.87 7.98-3.43 3.8-1.6 4.58-1.87 5.1-1.88.11 0 .37.03.54.18.17.15.22.35.24.46-.01.13.01.26-.02.41z"/>
+                    </svg>
+                    {% if is_rtl %}ارسال از طریق تلگرام{% else %}Send through Telegram{% endif %}
+                </button>
+            </div>
+            <button onclick="closeModal('download-modal')" class="mt-4 text-sky-600 hover:text-sky-800 transition-colors">
+                {% if is_rtl %}لغو{% else %}Cancel{% endif %}
+            </button>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="info-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg max-w-md w-full">
+            <h2 id="info-modal-title" class="text-xl font-bold mb-4"></h2>
+            <p class="mb-2">{% if is_rtl %}آپلود کننده:{% else %}Uploader:{% endif %} <span id="info-modal-uploader"></span></p>
+            <p class="mb-2">{% if is_rtl %}تعداد دانلود:{% else %}Downloads:{% endif %} <span id="info-modal-downloads"></span></p>
+            <p class="mb-2">{% if is_rtl %}لایک‌ها:{% else %}Likes:{% endif %} <span id="info-modal-likes"></span></p>
+            <button onclick="closeModal('info-modal')" class="mt-4 text-sky-600 hover:text-sky-800 transition-colors">
+                {% if is_rtl %}بستن{% else %}Close{% endif %}
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleRTL() {
+        fetch('', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.is_rtl) {
+                document.getElementById('file-manager').classList.remove('ltr');
+                document.getElementById('file-manager').classList.add('rtl');
+            } else {
+                document.getElementById('file-manager').classList.remove('rtl');
+                document.getElementById('file-manager').classList.add('ltr');
+            }
+            location.reload();
+        });
+    }
+
+    function toggleFolder(folderId) {
+        const folderContent = document.getElementById(`folder-${folderId}`);
+        const fileManager = document.getElementById('file-manager');
+        if (folderContent) {
+            folderContent.classList.toggle('hidden');
+            fileManager.classList.toggle('folder-focus');
+            const allItems = document.querySelectorAll('.file-item');
+            allItems.forEach(item => item.classList.remove('focused'));
+            const focusedItems = folderContent.querySelectorAll('.file-item');
+            focusedItems.forEach(item => item.classList.add('focused'));
+        }
+    }
+
+    function showDownloadModal(fileId, fileName) {
+        document.getElementById('download-modal-title').textContent = `{% if is_rtl %}دانلود {% else %}Download {% endif %}${fileName}`;
+        document.getElementById('download-modal').classList.remove('hidden');
+    }
+
+    function showInfoModal(fileId, fileName, uploader, downloads, likes) {
+        document.getElementById('info-modal-title').textContent = fileName;
+        document.getElementById('info-modal-uploader').textContent = uploader;
+        document.getElementById('info-modal-downloads').textContent = downloads;
+        document.getElementById('info-modal-likes').textContent = likes;
+        document.getElementById('info-modal').classList.remove('hidden');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+    }
+
+    function downloadFile() {
+        // Implement file download logic here
+        alert('{% if is_rtl %}در حال دانلود فایل...{% else %}Downloading file...{% endif %}');
+        closeModal('download-modal');
+    }
+
+    function sendTelegram() {
+        // Implement Telegram sending logic here
+        alert('{% if is_rtl %}در حال ارسال فایل از طریق تلگرام...{% else %}Sending file through Telegram...{% endif %}');
+        closeModal('download-modal');
+    }
+
+    function likeFile(fileId) {
+        fetch(`/file-manager/like/${fileId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            // Update the likes count in the UI
+            const likesElement = document.getElementById(`likes-${fileId}`);
+            if (likesElement) {
+                likesElement.textContent = data.new_likes_count;
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends '_base.html' %}
+
+{% block title %}QUT Archive - Loading{% endblock %}
+
+{% block content %}
+<div class="fixed inset-0 flex flex-col items-center justify-center bg-sky-500 text-white">
+    <h1 class="text-4xl font-bold mb-4">QUT Archive</h1>
+    <div class="w-16 h-16 border-t-4 border-white rounded-full animate-spin"></div>
+    <p class="mt-4 text-sm opacity-75">Version 1.0 • Created by Your Name</p>
+</div>
+
+<script>
+    setTimeout(() => {
+        window.location.href = "{% url 'file_manager' %}";
+    }, 3000);
+</script>
+{% endblock %}
